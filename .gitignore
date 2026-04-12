@@ -1,0 +1,26 @@
+# 秘密情報
+.env
+*.env
+*.key
+*.pem
+credentials.json
+*.token
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+
+# macOS
+.DS_Store
+.AppleDouble
+
+# アップロードされた一時ファイル
+uploads/
+*.pdf
+
+# ログ
+*.log

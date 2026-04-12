@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>見積書自動生成ツール</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: #F1F5F9;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      color: #1E293B;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 560px;
+    }
+
+    .card-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1E293B;
+      margin-bottom: 6px;
+    }
+
+    .card-subtitle {
+      font-size: 14px;
+      color: #64748B;
+      margin-bottom: 36px;
+    }
+
+    /* Drop zone */
+    .drop-zone {
+      border: 2px dashed #CBD5E1;
+      border-radius: 12px;
+      padding: 40px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: #F8FAFC;
+      position: relative;
+    }
+
+    .drop-zone:hover,
+    .drop-zone.drag-over {
+      border-color: #2563EB;
+      background: #EFF6FF;
+    }
+
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .drop-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 16px;
+      background: #DBEAFE;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .drop-icon svg {
+      width: 24px;
+      height: 24px;
+      color: #2563EB;
+    }
+
+    .drop-text-main {
+      font-size: 15px;
+      font-weight: 500;
+      color: #334155;
+      margin-bottom: 6px;
+    }
+
+    .drop-text-sub {
+      font-size: 13px;
+      color: #94A3B8;
+    }
+
+    .file-name {
+      margin-top: 16px;
+      font-size: 14px;
+      color: #2563EB;
+      font-weight: 500;
+      min-height: 20px;
+      text-align: center;
+      word-break: break-all;
+    }
+
+    /* Button */
+    .btn-upload {
+      display: block;
+      width: 100%;
+      margin-top: 24px;
+      padding: 14px;
+      background: #2563EB;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.1s ease;
+      letter-spacing: 0.03em;
+    }
+
+    .btn-upload:hover:not(:disabled) {
+      background: #1D4ED8;
+    }
+
+    .btn-upload:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .btn-upload:disabled {
+      background: #93C5FD;
+      cursor: not-allowed;
+    }
+
+    /* Status area */
+    .status-area {
+      margin-top: 24px;
+      min-height: 56px;
+    }
+
+    .status-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .status-box.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .status-box.processing {
+      background: #EFF6FF;
+      color: #1D4ED8;
+    }
+
+    .status-box.success {
+      background: #F0FDF4;
+      color: #16A34A;
+    }
+
+    .status-box.error {
+      background: #FEF2F2;
+      color: #DC2626;
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid #BFDBFE;
+      border-top-color: #2563EB;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .status-icon {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Divider */
+    .divider {
+      border: none;
+      border-top: 1px solid #E2E8F0;
+      margin: 32px 0 20px;
+    }
+
+    .help-text {
+      font-size: 12px;
+      color: #94A3B8;
+      line-height: 1.7;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="card-title">見積書自動生成ツール</div>
+    <div class="card-subtitle">新商品一覧表のPDFをアップロードすると、Excel見積書を自動生成します</div>
+
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" accept=".pdf">
+      <div class="drop-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+      </div>
+      <div class="drop-text-main">PDFファイルをドラッグ＆ドロップ</div>
+      <div class="drop-text-sub">またはクリックしてファイルを選択</div>
+    </div>
+
+    <div class="file-name" id="fileName"></div>
+
+    <button class="btn-upload" id="uploadBtn" disabled>Excelを生成する</button>
+
+    <div class="status-area">
+      <div class="status-box" id="statusBox">
+        <div class="status-icon" id="statusIcon"></div>
+        <span id="statusText"></span>
+      </div>
+    </div>
+
+    <hr class="divider">
+    <p class="help-text">
+      対応PDF: 五色浜工場・企画開発部・営業部仕入課の新商品一覧表<br>
+      出力形式: Excel（.xlsx）最大10商品/シート、自動的にシートを追加
+    </p>
+  </div>
+
+  <script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileName = document.getElementById('fileName');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const statusBox = document.getElementById('statusBox');
+    const statusIcon = document.getElementById('statusIcon');
+    const statusText = document.getElementById('statusText');
+
+    let selectedFile = null;
+
+    // Drag & drop events
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('drag-over');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFileSelect(files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length > 0) {
+        handleFileSelect(fileInput.files[0]);
+      }
+    });
+
+    function handleFileSelect(file) {
+      if (!file.name.toLowerCase().endsWith('.pdf')) {
+        updateStatus('PDFファイルのみ対応しています。', 'error');
+        return;
+      }
+      selectedFile = file;
+      fileName.textContent = file.name;
+      uploadBtn.disabled = false;
+      hideStatus();
+    }
+
+    uploadBtn.addEventListener('click', () => {
+      if (selectedFile) {
+        uploadFile(selectedFile);
+      }
+    });
+
+    function getToday() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}${m}${day}`;
+    }
+
+    function updateStatus(message, type) {
+      statusBox.className = 'status-box visible ' + type;
+      statusText.textContent = message;
+
+      if (type === 'processing') {
+        statusIcon.innerHTML = '<div class="spinner"></div>';
+      } else if (type === 'success') {
+        statusIcon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+      } else if (type === 'error') {
+        statusIcon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+      }
+    }
+
+    function hideStatus() {
+      statusBox.className = 'status-box';
+    }
+
+    async function uploadFile(file) {
+      const formData = new FormData();
+      formData.append('pdf', file);
+
+      uploadBtn.disabled = true;
+      updateStatus('PDF読み取り・転記処理中...', 'processing');
+
+      try {
+        const response = await fetch('/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          let errMsg = '処理に失敗しました';
+          try {
+            const errData = await response.json();
+            errMsg = errData.error || errMsg;
+          } catch (_) {}
+          throw new Error(errMsg);
+        }
+
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('spreadsheetml') && !contentType.includes('octet-stream')) {
+          let errMsg = 'サーバーからの応答が想定外の形式です';
+          try {
+            const errData = await response.json();
+            errMsg = errData.error || errMsg;
+          } catch (_) {}
+          throw new Error(errMsg);
+        }
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `見積書_完成版_${getToday()}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        updateStatus('完了！Excelファイルをダウンロードしました ✓', 'success');
+
+      } catch (e) {
+        updateStatus('エラー: ' + e.message, 'error');
+      } finally {
+        uploadBtn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
