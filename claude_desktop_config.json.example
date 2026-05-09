@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/あなたのユーザー名/estimate-app",
+        "/Users/あなたのユーザー名/konkatsu-blog-automation"
+      ]
+    }
+  }
+}
