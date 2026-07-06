@@ -1,30 +1,19 @@
 # プロジェクトルール
 
-## 婚活ラボ ブログ記事 自動通知ルール
+## 見積書自動生成アプリ
 
-### 記事完成時の通知
+新商品一覧表のPDFをアップロードすると、Excel見積書を自動生成するツール。
 
-`konkatsu-blog-automation/` ディレクトリに新しい記事（.mdファイル）を作成・コミットしたとき、必ず以下を実行すること：
+- `app.py` … Flask アプリ本体（PDF読み取り → 商品データ抽出 → Excel生成）
+- `index.html` … アップロード用のフロントエンド画面
+- `ocr_pdf.swift` … Swift/Vision によるスキャンPDFのOCR処理
+- `templates/見積書サンプル.xlsx` … 出力Excelのテンプレート
 
-**通知先メールアドレス：** `rougokenko57@gmail.com`
+### 起動方法
 
-**通知内容（このチャットで伝える）：**
 ```
-件名：【婚活ラボ】新記事が完成しました
-
-以下の記事が完成しました。rougokenko57@gmail.com へご確認をお知らせします。
-
-タイトル：〇〇〇〇
-公開予定日：〇〇〇〇
-カテゴリ：〇〇〇〇
-ファイル：konkatsu-blog-automation/〇〇〇〇.md
-
-記事本文：
-（本文全文）
+pip install -r requirements.txt
+python app.py
 ```
 
-### 注意事項
-
-- 複数記事を一度に作成した場合は、全記事をまとめて通知する
-- WordPressへの投稿はユーザーが手動で行う（コピペ用に本文を提供する）
-- 記事は下書き（status: draft）として作成し、公開予定日を設定する
+`http://localhost:5001` で起動する。
